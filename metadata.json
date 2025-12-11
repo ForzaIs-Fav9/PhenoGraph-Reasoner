@@ -1,0 +1,8 @@
+{
+  "name": "PhenoGraph Reasoner",
+  "description": "A clinical-grade multimodal reasoning assistant that analyzes patient data to produce explainable, timestamped phenotype screening reports.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

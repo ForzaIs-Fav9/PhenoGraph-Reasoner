@@ -99,6 +99,7 @@ export const InputEditor: React.FC<InputEditorProps> = ({ onAnalyze, isAnalyzing
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
+  const liveStreamRef = useRef<MediaStream | null>(null);
   
   const liveSessionRef = useRef<any>(null);
   const liveSessionRecorderRef = useRef<MediaRecorder | null>(null);
@@ -193,6 +194,8 @@ export const InputEditor: React.FC<InputEditorProps> = ({ onAnalyze, isAnalyzing
 
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       setLiveStream(stream);
+      liveStreamRef.current = stream;
+      
       setIsLiveActive(true); // Trigger render of video element
       
       setLiveTranscription(t('live','init'));
@@ -253,8 +256,15 @@ export const InputEditor: React.FC<InputEditorProps> = ({ onAnalyze, isAnalyzing
               for (let i = 0; i < len; i++) {
                  bytes[i] = binaryString.charCodeAt(i);
               }
+              const int16Data = new Int16Array(bytes.buffer);
               
-              const audioBuffer = await outputAudioContext.decodeAudioData(bytes.buffer.slice(0));
+              // Manual Decode for Raw PCM (API sends raw PCM, not WAV/MP3)
+              const audioBuffer = outputAudioContext.createBuffer(1, int16Data.length, 24000);
+              const channelData = audioBuffer.getChannelData(0);
+              for (let i = 0; i < int16Data.length; i++) {
+                 channelData[i] = int16Data[i] / 32768.0;
+              }
+              
               const source = outputAudioContext.createBufferSource();
               source.buffer = audioBuffer;
               source.connect(outputNode);
@@ -357,10 +367,11 @@ export const InputEditor: React.FC<InputEditorProps> = ({ onAnalyze, isAnalyzing
        liveSessionRef.current = null;
      }
 
-     if (liveStream) {
-       liveStream.getTracks().forEach(t => t.stop());
-       setLiveStream(null);
+     if (liveStreamRef.current) {
+       liveStreamRef.current.getTracks().forEach(t => t.stop());
+       liveStreamRef.current = null;
      }
+     setLiveStream(null);
 
      if ((window as any)._liveInterval) {
        clearInterval((window as any)._liveInterval);
@@ -383,6 +394,25 @@ export const InputEditor: React.FC<InputEditorProps> = ({ onAnalyze, isAnalyzing
      setLiveTranscription("");
      setLiveRiskAlert(null);
   };
+
+  // Ensure cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (liveStreamRef.current) {
+        liveStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+      if (liveSessionRef.current) {
+        liveSessionRef.current.close();
+      }
+    };
+  }, []);
+
+  // Ensure cleanup when switching away from Live tab
+  useEffect(() => {
+    if (activeTab !== 'live' && isLiveActive) {
+      stopLiveSession();
+    }
+  }, [activeTab]);
 
   const startRecording = async () => {
     try {

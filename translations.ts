@@ -31,7 +31,7 @@ export const TRANSLATIONS: Record<string, any> = {
       stop: "Stop Session",
       listening: "Co-pilot Listening...",
       init: "Initializing Co-pilot...",
-      desc: "The AI will watch your camera stream and provide brief, spoken observations in real-time."
+      desc: "Record straight from your camera and upload directly."
     },
     report: {
       back: "Back to Input",
@@ -536,7 +536,7 @@ export const TRANSLATIONS: Record<string, any> = {
       match: "Correspondência",
       evidence: "Evidência de Apoio",
       rationale: "Justificativa Clínica",
-      nextSteps: "Próximos Passos Sugeridos",
+      nextSteps: "Próximos Pasos Sugeridos",
       disclaimer: "Aviso Médico"
     },
     settings: {
